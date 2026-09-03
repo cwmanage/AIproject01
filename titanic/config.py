@@ -1,50 +1,50 @@
-"""Central configuration: file paths and reproduction settings.
+"""全局配置：文件路径与复现实验参数。
 
-All constants used across the project live here so that a single change
-(e.g. a new data path) never requires touching business logic.
+项目里用到的所有常量都集中在这个文件，改一处(比如换数据路径)不用
+去翻业务代码。
 """
 
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# Project directories (resolved relative to this file -> works from anywhere)
+# 项目目录(基于本文件位置解析 -> 放到任何电脑都能运行)
 # ---------------------------------------------------------------------------
-# Project root: .../AIproject01
+# 项目根目录: .../AIproject01
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
-# Raw input data
+# 原始输入数据
 DATA_DIR = PROJECT_ROOT / "data"
 DATA_PATH = DATA_DIR / "titanic.csv"
 
-# Every generated artifact (figures + CSV results) goes to outputs/
+# 所有生成产物(图 + CSV 结果)都输出到 outputs/
 OUTPUT_DIR = PROJECT_ROOT / "outputs"
-FIG_DIR = OUTPUT_DIR / "figures"      # visualization images
-CSV_DIR = OUTPUT_DIR / "csv"          # prediction / metric result tables
+FIG_DIR = OUTPUT_DIR / "figures"      # 可视化图片
+CSV_DIR = OUTPUT_DIR / "csv"          # 预测/指标结果表格
 
-# Web static assets (served by FastAPI)
+# Web 静态资源(FastAPI 使用)
 STATIC_DIR = PROJECT_ROOT / "static"
 TEMPLATE_DIR = PROJECT_ROOT / "templates"
 TEMPLATE_PATH = TEMPLATE_DIR / "index.html"
 
 # ---------------------------------------------------------------------------
-# Reproduction settings (from the courseware: same split for all models)
+# 复现设置(来自课件：四个模型共用同一个划分)
 # ---------------------------------------------------------------------------
-TEST_SIZE = 0.20            # 80% train / 20% test
-RANDOM_STATE = 42           # fixed seed -> reproducible results
-STRATIFY = True             # keep the same survived ratio in train/test
+TEST_SIZE = 0.20            # 80% 训练 / 20% 测试
+RANDOM_STATE = 42           # 固定随机种子 -> 结果可复现
+STRATIFY = True             # 分层抽样：保证训练/测试集生还比例一致
 
 # ---------------------------------------------------------------------------
-# Data columns
+# 数据列
 # ---------------------------------------------------------------------------
-TARGET_COL = "Survived"                 # what we predict (0 = died, 1 = survived)
-DROP_COLS = ["PassengerId", "Name", "Ticket", "Cabin"]  # not used for modelling
-NUM_COLS = ["Age", "SibSp", "Parch", "Fare"]            # numerical features
-CAT_COLS = ["Pclass", "Sex", "Embarked"]                # categorical features
+TARGET_COL = "Survived"                 # 预测目标(0 = 未生还, 1 = 生还)
+DROP_COLS = ["PassengerId", "Name", "Ticket", "Cabin"]  # 不参与建模的列
+NUM_COLS = ["Age", "SibSp", "Parch", "Fare"]            # 数值特征
+CAT_COLS = ["Pclass", "Sex", "Embarked"]                # 类别特征
 
 # ---------------------------------------------------------------------------
-# API / model metadata
+# API / 模型元信息
 # ---------------------------------------------------------------------------
-# (name, human readable label) -- label used in plots, tables and the web page
+# (模型id, 人类可读名称) -- 用于图、表格和网页展示
 MODELS = [
     ("logistic", "Logistic Regression"),
     ("svm", "Support Vector Machine"),
@@ -52,15 +52,15 @@ MODELS = [
     ("random_forest", "Random Forest"),
 ]
 
-# Metric columns shown in the comparison table / grouped bar chart.
-# Order here drives the column order everywhere (courseware p.40 table).
+# 对比表 / 分组条形图里展示的指标列。
+# 这里的顺序决定所有地方的列顺序(对齐课件 p.40 的表格)。
 METRIC_KEYS = ["accuracy", "precision", "recall", "f1", "auc"]
 
-# Column order expected by the live-prediction form (Pclass/Sex/Age/...)
+# 网页实时预测表单期望的字段顺序(Pclass/Sex/Age/...)
 FORM_COLS = ["Pclass", "Sex", "Age", "SibSp", "Parch", "Fare", "Embarked"]
 
 
 def ensure_dirs() -> None:
-    """Create every directory we write artifacts into (idempotent)."""
+    """创建所有需要写产物的目录(幂等，可重复调用)。"""
     for d in (DATA_DIR, FIG_DIR, CSV_DIR, STATIC_DIR, TEMPLATE_DIR):
         d.mkdir(parents=True, exist_ok=True)

@@ -1,40 +1,40 @@
-"""Lightweight i18n dictionary for the web UI (English <-> Simplified Chinese).
+"""网页 UI 的轻量 i18n 字典(英文 <-> 简体中文)。
 
-Kept in one module so the template context stays tidy and every string has a
-single source of truth. The charts themselves are bilingual (EN + ZH baked
-into the PNG), so switching the page language never requires swapping images.
+单独放在一个模块里，模板上下文保持整洁，每条文案只有一个源头。
+图本身是双语的(EN + 中文直接画进 PNG)，所以切换页面语言永远不用
+换图。
 """
 
 # ---------------------------------------------------------------------------
-# UI strings: key -> (en, zh)
+# UI 文案: key -> (en, zh)
 # ---------------------------------------------------------------------------
 UI = {
-    # page chrome
+    # 页面骨架
     "page_title": ("Titanic Survival Prediction — AI Coursework",
                    "泰坦尼克号生还预测 — AI 课程作业"),
     "header_subtitle": ("Titanic Dataset · Classification · Scikit-learn · "
                         "FastAPI · Data Visualization",
                         "泰坦尼克数据集 · 分类 · Scikit-learn · FastAPI · 数据可视化"),
-    "lang_btn_en": ("中文", "EN"),          # button shows the *other* language
+    "lang_btn_en": ("中文", "EN"),          # 按钮显示“另一种”语言
     "lang_hint_en": ("Switch to Chinese", "切换到英文"),
-    # navigation
+    # 导航
     "nav_charts": ("📊 Data Visualization", "📊 数据可视化"),
     "nav_metrics": ("📈 Model Comparison", "📈 模型对比"),
     "nav_predict": ("🔮 Try a Prediction", "🔮 预测演示"),
     "nav_results": ("📄 Test Results", "📄 测试结果"),
     "nav_api": ("⚡ API", "⚡ 接口文档"),
-    # section titles
+    # 区块标题
     "sec_charts": ("1 · Data Visualization", "1 · 数据可视化"),
     "sec_metrics": ("2 · Model Comparison", "2 · 四模型对比"),
     "sec_predict": ("3 · Try a Prediction", "3 · 填写信息预测生还"),
     "sec_results": ("4 · Test Set Predictions", "4 · 测试集(20%)预测结果"),
     "sec_api": ("5 · REST API", "5 · 接口说明"),
-    # charts intro
+    # 图表区导语
     "charts_intro": ("8 charts from <code>data/titanic.csv</code> (891 passengers). "
                      "Every figure is bilingual (EN + 中文).",
                      "基于 <code>data/titanic.csv</code>(891 名乘客) 生成的 8 张图。"
                      "每张图均含中英双语标注。"),
-    # metrics
+    # 指标
     "metrics_intro": ("Same 80/20 split, <code>random_state=42</code>, "
                       "<code>stratify=y</code> for all models (courseware "
                       "reproduction). Metrics are computed on the untouched test set.",
@@ -56,7 +56,7 @@ UI = {
     "metrics_missing": ("Metrics not available yet. Run "
                         "<code>python -m titanic.train</code> first.",
                         "暂无指标数据。请先运行 <code>python -m titanic.train</code>。"),
-    # prediction form
+    # 预测表单
     "form_class": ("Passenger Class", "舱位等级"),
     "form_class_1": ("1st — First", "一等舱"),
     "form_class_2": ("2nd — Second", "二等舱"),
@@ -82,7 +82,7 @@ UI = {
     "res_surv_prob": ("Survival probability", "生还概率"),
     "res_not_prob": ("Not-survived probability", "未生还概率"),
     "res_error": ("⚠️ Error", "⚠️ 错误"),
-    # results table
+    # 结果表
     "results_model_label": ("Model:", "模型："),
     "btn_load": ("Load Table", "加载表格"),
     "loading": ("Loading…", "加载中…"),
@@ -98,7 +98,7 @@ UI = {
     "not_survived_short": ("💀 not survived", "💀 未生还"),
     "rows_correct": ("{n} test rows · {c} correct ({pct}% accuracy)",
                      "{n} 条测试数据 · 正确 {c} 条(准确率 {pct}%)"),
-    # API section
+    # API 区
     "api_desc": ("Description", "说明"),
     "api_health": ("Service health check", "服务健康检查"),
     "api_summary": ("All model metrics + figure list", "四模型全部指标 + 图表清单"),
@@ -107,7 +107,7 @@ UI = {
     "api_predict_post": ("Predict via JSON body", "通过 JSON 请求体预测"),
     "api_note_title": ("POST example", "POST 请求示例"),
     "api_docs_label": ("Interactive API docs", "交互式 API 文档"),
-    # footer
+    # 页脚
     "footer_line": ("AI Coursework · Titanic Survival Prediction & Data "
                     "Visualization · Python + FastAPI + Scikit-learn",
                     "AI 课程作业 · 泰坦尼克号生还预测与数据可视化 · Python + FastAPI + Scikit-learn"),
@@ -117,7 +117,7 @@ UI = {
                      " · 模型：<code>models/</code>"),
 }
 
-# Chart captions (short one-line Chinese note under each figure).
+# 图表配文(每张图下面的中文短注)。
 CHART_CAPTIONS = {
     "1_survived_counts": ("Target balance: survived vs not survived",
                           "目标变量分布：生还/未生还人数对比"),
@@ -134,6 +134,6 @@ CHART_CAPTIONS = {
 
 
 def pick(key: str, lang: str) -> str:
-    """Return the UI string for ``key`` in ``lang`` ('en' | 'zh')."""
+    """按 ``lang``('en' | 'zh') 返回 ``key`` 对应的 UI 文案。"""
     en, zh = UI[key]
     return zh if lang == "zh" else en

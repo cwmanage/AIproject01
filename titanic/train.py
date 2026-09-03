@@ -1,20 +1,20 @@
-"""Train four classification models on the Titanic data and evaluate them.
+"""训练四个分类模型并评估（泰坦尼克数据）。
 
-End-to-end flow (mirrors the courseware "unified case" pipeline):
-    1. Load data + build the shared preprocessing transformer
-    2. Split 80/20 with random_state=42 and stratify=y (same split for all)
-    3. Preprocess features (fit on train only -> no data leakage)
-    4. Train Logistic Regression / SVM / Decision Tree / Random Forest
-    5. Evaluate each on the test split (accuracy, precision, recall, F1)
-    6. Save artifacts to outputs/:
-         figures/   - 6 data-understanding charts (see visualize.py)
-         csv/predictions_<model>.csv  - test-set true vs predicted
-         csv/metrics_all_models.csv   - comparison table of every model
-         csv/test_predictions_best.csv- best model's final submission table
-         models/    - serialized pipeline (preprocessor + model) for the API
+端到端流程(镜像课件"统一案例"管道)：
+    1. 加载数据 + 构建共享的预处理转换器
+    2. 80/20 划分，random_state=42 且 stratify=y(所有模型共用同一划分)
+    3. 预处理特征(只在训练集上 fit -> 无数据泄漏)
+    4. 训练 Logistic Regression / SVM / Decision Tree / Random Forest
+    5. 在测试集上评估(accuracy, precision, recall, F1, AUC)
+    6. 保存产物到 outputs/：
+         figures/   - 8 张数据理解/对比图(见 visualize.py)
+         csv/predictions_<model>.csv  - 测试集真实 vs 预测
+         csv/metrics_all_models.csv   - 四模型指标对比表
+         csv/test_predictions_best.csv- 最优模型最终提交表
+         models/    - 序列化的管道(预处理 + 模型)，供 API 使用
 
-Run from the project root with:  python -m titanic.train
-(It also regenerates all visualizations at the same time.)
+在项目根目录运行：  python -m titanic.train
+(会同时重新生成全部可视化图。)
 """
 
 from pathlib import Path
@@ -30,7 +30,7 @@ from sklearn.metrics import (
     f1_score,
     precision_score,
     recall_score,
-    roc_auc_score,  # area under the ROC curve (courseware p.38-40)
+    roc_auc_score,  # ROC 曲线下面积(课件 p.38-40)
     roc_curve,
 )
 from sklearn.model_selection import train_test_split
@@ -43,29 +43,29 @@ from .preprocessing import build_preprocessor, load_data, make_features, make_ta
 from .visualize import generate_all, save_model_comparison_chart
 
 # ---------------------------------------------------------------------------
-# model zoo: id -> (label, unfitted classifier)
+# 模型仓库: id -> (展示名称, 未训练的模型)
 # ---------------------------------------------------------------------------
 MODEL_ZOO = {
     "logistic": (
         "Logistic Regression",
-        # courseware p.29: max_iter=1000, random_state=42
+        # 课件 p.29: max_iter=1000, random_state=42
         LogisticRegression(max_iter=1000, random_state=config.RANDOM_STATE),
     ),
     "svm": (
         "Support Vector Machine",
-        # courseware p.31: SVC(kernel="rbf", probability=True, random_state=42)
-        # sklearn 1.9+ deprecates SVC(probability=True); wrapping the SVC in a
-        # calibrated classifier keeps predict_proba() for the ROC curve.
+        # 课件 p.31: SVC(kernel="rbf", probability=True, random_state=42)
+        # sklearn 1.9+ 已弃用 SVC(probability=True)；外面包一层校准分类器，
+        # 仍然能拿到 predict_proba() 概率输出，供 ROC 曲线使用。
         CalibratedClassifierCV(SVC(random_state=config.RANDOM_STATE), ensemble=False),
     ),
     "decision_tree": (
         "Decision Tree",
-        # courseware p.33: max_depth=4 (limits depth -> less overfitting)
+        # 课件 p.33: max_depth=4 (限制深度 -> 减少过拟合)
         DecisionTreeClassifier(max_depth=4, random_state=config.RANDOM_STATE),
     ),
     "random_forest": (
         "Random Forest",
-        # courseware p.35: n_estimators=300, max_depth=6
+        # 课件 p.35: n_estimators=300, max_depth=6
         RandomForestClassifier(
             n_estimators=300, max_depth=6, random_state=config.RANDOM_STATE
         ),
@@ -74,14 +74,14 @@ MODEL_ZOO = {
 
 
 # ---------------------------------------------------------------------------
-# helpers
+# 辅助函数
 # ---------------------------------------------------------------------------
 
 def split_data(df: pd.DataFrame):
-    """80/20 train/test split with fixed seed and stratified target.
+    """80/20 训练/测试划分：固定随机种子 + 按目标分层。
 
-    `stratify=y` keeps the survived ratio identical in both splits, so every
-    model sees the same distribution (courseware reproduction setting).
+    `stratify=y` 保证两份数据里生还者的比例一致，这样每个模型看到的
+    分布都相同(课件复现规范)。
     """
     X = make_features(df)
     y = make_target(df)
@@ -95,12 +95,11 @@ def split_data(df: pd.DataFrame):
 
 
 def evaluate(y_true: pd.Series, y_pred: np.ndarray, y_proba: np.ndarray | None = None) -> dict:
-    """Compute the standard classification metrics for one model.
+    """计算单个模型的标准分类指标。
 
-    ``y_proba`` is the probability of the positive class (survived). It is
-    needed only for the AUC (area under the ROC curve, courseware p.38-40):
-    AUC ranks the test rows by predicted probability and is therefore
-    threshold-independent. ``None`` (a model without probabilities) -> NaN.
+    ``y_proba`` 是正类(生还)的预测概率。它只用于计算 AUC(ROC 曲线下
+    面积，课件 p.38-40)：AUC 按预测概率给测试样本排序，因此不依赖
+    阈值。``None``(拿不到概率的模型) -> AUC 记为 NaN。
     """
     metrics = {
         "accuracy": accuracy_score(y_true, y_pred),
@@ -116,49 +115,49 @@ def evaluate(y_true: pd.Series, y_pred: np.ndarray, y_proba: np.ndarray | None =
 
 
 def _fit_and_evaluate(name: str, clf, X_train, X_test, y_train, y_test):
-    """Fit one model inside a pipeline (preprocessor fit on train only!)."""
+    """在管道里训练一个模型(预处理只在训练集上 fit！)。"""
     pipe = Pipeline(steps=[("preprocessor", preprocessor), ("classifier", clf)])
     pipe.fit(X_train, y_train)
     y_pred = pipe.predict(X_test)
-    # probability of the positive class -> used for AUC and the ROC curve
+    # 正类概率 -> 用于 AUC 和 ROC 曲线
     y_proba = pipe.predict_proba(X_test)[:, 1]
     metrics = evaluate(y_test, y_pred, y_proba)
     return pipe, y_pred, y_proba, metrics
 
 
 # ---------------------------------------------------------------------------
-# main pipeline
+# 主流程
 # ---------------------------------------------------------------------------
 
-# module-level cache: fitted pipelines reused by app.py via train_pipelines()
+# 模块级缓存：训练好的管道，app.py 通过 get_pipeline() 复用
 _pipelines: dict = {}
 _meta: dict = {}
-preprocessor = build_preprocessor()  # shared by every pipeline
+preprocessor = build_preprocessor()  # 所有管道共用同一个预处理
 
 
 def run_training() -> dict:
-    """Execute the whole training pipeline; return structured results."""
+    """执行整个训练流程；返回结构化的结果。"""
     global preprocessor
     config.ensure_dirs()
 
-    # -- 1. data ------------------------------------------------------------
-    # NOTE: we deliberately keep the original row indices of X_test so that
-    # `df.loc[X_test.index]` later maps every prediction back to the correct
-    # PassengerId (the split is random, so index order is not 0..n-1).
+    # -- 1. 数据 ------------------------------------------------------------
+    # 注意：我们刻意保留 X_test 的原始行索引，这样后面用
+    # `df.loc[X_test.index]` 能把每条预测映射回正确的 PassengerId
+    # (划分是随机的，所以索引顺序并不是 0..n-1)。
     df = load_data()
     X_train, X_test, y_train, y_test = split_data(df)
 
-    # -- 2. regenerate data-understanding visualizations ---------------------
-    fig_paths = generate_all()  # uses the full dataset (understanding, not modelling)
+    # -- 2. 重新生成数据理解可视化图 ----------------------------------------
+    fig_paths = generate_all()  # 用全量数据(理解数据用，不是建模)
     print(f"[1/4] Data loaded: {len(df)} rows; charts -> {config.FIG_DIR.name}/")
 
-    # -- 3. train + evaluate every model -------------------------------------
+    # -- 3. 训练 + 评估每个模型 ---------------------------------------------
     rows, preds_holder, probas_holder = [], {}, {}
     for name, (label, clf) in MODEL_ZOO.items():
         pipe, y_pred, y_proba, metrics = _fit_and_evaluate(
             name, clf, X_train, X_test, y_train, y_test
         )
-        _pipelines[name] = pipe          # cache for the API
+        _pipelines[name] = pipe          # 缓存，供 API 使用
         preds_holder[name] = y_pred
         probas_holder[name] = y_proba
         rows.append(
@@ -172,8 +171,8 @@ def run_training() -> dict:
               f"prec={metrics['precision']:.4f}  rec={metrics['recall']:.4f}  "
               f"f1={metrics['f1']:.4f}  auc={metrics['auc']:.4f}")
 
-    # -- 4. persist artifacts ------------------------------------------------
-    # 4a. prediction CSVs: PassengerId + true label + predicted label per model
+    # -- 4. 持久化产物 ------------------------------------------------------
+    # 4a. 预测 CSV：每个模型 = PassengerId + 真实标签 + 预测标签
     test_ids = df.loc[X_test.index, "PassengerId"]
     for name, y_pred in preds_holder.items():
         out = config.CSV_DIR / f"predictions_{name}.csv"
@@ -186,23 +185,23 @@ def run_training() -> dict:
         ).to_csv(out, index=False)
         print(f"    saved {out.name}")
 
-    # 4b. metrics table (all models side by side, incl. AUC column)
+    # 4b. 指标表(四个模型并列，含 AUC 列)
     metrics_df = pd.DataFrame(rows)
     metrics_path = config.CSV_DIR / "metrics_all_models.csv"
     metrics_df.to_csv(metrics_path, index=False)
     print(f"[2/4] Metrics table -> {metrics_path.name}")
 
-    # 4b2. model-comparison grouped bar chart + ROC curves (courseware p.40/44)
-    #      - p.40 table -> grouped bars for the five metrics
-    #      - p.44 ROC chart -> one ROC curve per model (AUC in the legend)
-    fig_paths += save_model_comparison_chart(metrics_df)   # grouped bars
+    # 4b2. 模型对比分组条形图 + ROC 曲线(课件 p.40/p.44)
+    #      - p.40 表格 -> 五指标的分组条形图
+    #      - p.44 ROC 图 -> 每个模型一条 ROC 曲线(AUC 标在图例)
+    fig_paths += save_model_comparison_chart(metrics_df)   # 分组条形图
     roc_series = {}
     for name, y_proba in probas_holder.items():
         fpr, tpr, _ = roc_curve(y_test, y_proba)
         roc_series[name] = (fpr, tpr)
     fig_paths += save_model_comparison_chart(metrics_df, roc_series=roc_series)
 
-    # 4c. best model (highest accuracy) -> final submission-style CSV
+    # 4c. 最优模型(准确率最高) -> 最终提交格式的 CSV
     best_id = metrics_df.loc[metrics_df["accuracy"].idxmax(), "model_id"]
     best_path = config.CSV_DIR / "test_predictions_best.csv"
     pd.DataFrame(
@@ -214,7 +213,7 @@ def run_training() -> dict:
     ).to_csv(best_path, index=False)
     print(f"[3/4] Best model: {best_id} (acc={metrics_df['accuracy'].max():.4f})")
 
-    # 4d. serialized pipelines -> used later by the FastAPI app
+    # 4d. 序列化管道 -> 之后由 FastAPI 应用加载
     model_dir = config.PROJECT_ROOT / "models"
     model_dir.mkdir(exist_ok=True)
     for name, pipe in _pipelines.items():
@@ -237,27 +236,27 @@ def run_training() -> dict:
 
 
 # ---------------------------------------------------------------------------
-# API-facing helpers (used by app.py)
+# 供 API 调用的辅助函数(app.py 使用)
 # ---------------------------------------------------------------------------
 
 def ensure_trained() -> dict:
-    """Return cached training results; train once if the cache is empty."""
+    """返回缓存的训练结果；缓存为空时先训练一次。"""
     if not _pipelines:
         run_training()
     return _meta
 
 
 def get_pipeline(model_id: str) -> Pipeline:
-    """Return a fitted pipeline by model id (trains first if needed)."""
+    """按模型 id 返回训练好的管道(必要时先训练)。"""
     ensure_trained()
     return _pipelines[model_id]
 
 
 def get_meta() -> dict:
-    """Return the last training run's metadata (trains first if needed)."""
+    """返回最近一次训练的元信息(必要时先训练)。"""
     ensure_trained()
     return _meta
 
 
-if __name__ == "__main__":  # allow: python -m titanic.train
+if __name__ == "__main__":  # 支持: python -m titanic.train
     run_training()

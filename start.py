@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
-"""Cross-platform one-click launcher for the Titanic AI coursework project.
+"""泰坦尼克 AI 课程作业的跨平台一键启动器。
 
-What it does (idempotent — safe to run again and again):
-    1. Resolve the project root (this file's parent directory)
-    2. Locate the project virtual environment (.venv); create it if missing
-       (uses `python -m venv`, falling back to `uv venv` if available)
-    3. Install dependencies with the best available tool:
+它做的事情(幂等——重复运行也安全)：
+    1. 解析项目根目录(本文件所在目录)
+    2. 找到项目虚拟环境(.venv)；不存在就创建
+       (用 `python -m venv`，有 uv 则退回 `uv venv`)
+    3. 用可用的最佳工具安装依赖：
          uv sync  ->  uv pip install  ->  python -m pip install -r requirements.txt
-       (requirements.txt is generated from pyproject.toml if missing)
-    4. Train the models + regenerate charts if outputs/ is empty
-       (python -m titanic.train — also validates that every dependency works)
-    5. Start the FastAPI server (uvicorn) and print the URLs
+       (requirements.txt 缺失时会从 pyproject.toml 生成)
+    4. 如果 outputs/ 为空则训练模型 + 重新生成图
+       (python -m titanic.train —— 顺便验证所有依赖可用)
+    5. 启动 FastAPI 服务(uvicorn)并打印访问地址
 
-Run it with the Python you want to use:
-    python start.py                 # Windows / macOS / Linux (any platform)
-    py -3 start.py                  # Windows, if `python` is not on PATH
-On Windows you can also double-click `start.bat` (it simply calls this file).
+用你想用的 Python 运行它：
+    python start.py                 # Windows / macOS / Linux (任何平台)
+    py -3 start.py                  # Windows：如果 `python` 不在 PATH 里
+Windows 上也可以双击 `start.bat`(它只是调用本文件)。
 
-Ctrl+C stops the server. On Windows the terminal window stays open afterwards.
+Ctrl+C 停止服务。Windows 上终端窗口之后会保持打开。
 """
 
 from __future__ import annotations
@@ -30,14 +30,14 @@ import time
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# constants
+# 常量
 # ---------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent
 VENV_DIR = PROJECT_ROOT / ".venv"
 REQ_FILE = PROJECT_ROOT / "requirements.txt"
 PYPROJECT = PROJECT_ROOT / "pyproject.toml"
 
-# Files that mark "project already set up" -> we can skip the heavy steps
+# 标记"项目已初始化"的文件 -> 可以跳过耗时的步骤
 OUTPUTS_DIR = PROJECT_ROOT / "outputs"
 METRICS_CSV = OUTPUTS_DIR / "csv" / "metrics_all_models.csv"
 
@@ -46,16 +46,16 @@ PORT = int(os.environ.get("TITANIC_PORT", "8000"))
 
 
 # ---------------------------------------------------------------------------
-# small helpers
+# 小工具函数
 # ---------------------------------------------------------------------------
 
 def log(msg: str) -> None:
-    """Print a message that is visible in every OS console (no fancy escapes)."""
+    """打印消息，任何操作系统的控制台都可见(不用花哨的转义符)。"""
     print(f"[start.py] {msg}", flush=True)
 
 
 def run(cmd: list[str], cwd: Path = PROJECT_ROOT) -> None:
-    """Run a command and stream its output; abort on non-zero exit."""
+    """运行命令并流式输出；非零退出码则中止。"""
     log("$ " + " ".join(str(c) for c in cmd))
     result = subprocess.run(cmd, cwd=str(cwd))
     if result.returncode != 0:
@@ -64,33 +64,33 @@ def run(cmd: list[str], cwd: Path = PROJECT_ROOT) -> None:
 
 
 def get_python() -> Path:
-    """Return the interpreter we use for env creation / pip / scripts."""
-    # Prefer the venv's own interpreter if it already exists
-    if (VENV_DIR / "Scripts" / "python.exe").exists():      # Windows layout
+    """返回用于创建环境 / 装包 / 跑脚本的解释器。"""
+    # 优先用虚拟环境自己的解释器(如果已存在)
+    if (VENV_DIR / "Scripts" / "python.exe").exists():      # Windows 布局
         return VENV_DIR / "Scripts" / "python.exe"
-    if (VENV_DIR / "bin" / "python").exists():              # POSIX layout
+    if (VENV_DIR / "bin" / "python").exists():              # POSIX 布局
         return VENV_DIR / "bin" / "python"
-    # No venv yet -> use the interpreter that is running this script
+    # 还没有虚拟环境 -> 用正在运行本脚本的解释器
     return Path(sys.executable)
 
 
 def ensure_venv() -> Path:
-    """Create the virtual environment if it does not exist yet.
+    """如果虚拟环境不存在则创建它。
 
-    Returns the venv interpreter. When a .venv already exists (e.g. created
-    earlier by uv with Python 3.12), it is reused as-is — no version checks
-    are needed because the environment was already validated by training.
+    返回 venv 的解释器。如果 .venv 已存在(比如之前用 uv 建的
+    Python 3.12)，原样复用——不需要检查版本，因为训练早就验证过
+    这个环境是可用的。
     """
-    if get_python().parent.parent != VENV_DIR:  # not created yet
-        # We are about to create the venv with the launcher's Python:
-        # dependencies (numpy 2.5 / pandas 3.0) require Python 3.12+.
+    if get_python().parent.parent != VENV_DIR:  # 还没创建
+        # 我们即将用启动器的 Python 创建 venv：
+        # 依赖(numpy 2.5 / pandas 3.0)要求 Python 3.12+。
         if sys.version_info < (3, 12):
             log("FATAL: Python 3.12+ is required to CREATE the venv "
                 "(numpy 2.5 / pandas 3.0 need it). Found " + sys.version.split()[0])
             sys.exit(1)
         log("Creating virtual environment (.venv) ...")
         venv_py = sys.executable
-        if shutil.which("uv"):                  # uv is fastest when available
+        if shutil.which("uv"):                  # 有 uv 时它最快
             run([shutil.which("uv"), "venv", str(VENV_DIR)])
         else:
             run([venv_py, "-m", "venv", str(VENV_DIR)])
@@ -98,7 +98,7 @@ def ensure_venv() -> Path:
 
 
 def ensure_requirements_file() -> None:
-    """Generate requirements.txt from pyproject.toml if it is missing."""
+    """如果 requirements.txt 缺失，则从 pyproject.toml 生成。"""
     if REQ_FILE.exists():
         return
     if not PYPROJECT.exists():
@@ -106,17 +106,17 @@ def ensure_requirements_file() -> None:
         return
     log("Generating requirements.txt from pyproject.toml ...")
     try:
-        # pandas/sklearn/matplotlib/jinja2 live under [project].dependencies
+        # pandas/sklearn/matplotlib/jinja2 都在 [project].dependencies 下
         import tomllib
         with open(PYPROJECT, "rb") as fh:
             deps = tomllib.load(fh).get("project", {}).get("dependencies", [])
-        # also include optional-dependencies if any exist
+        # 如果有 optional-dependencies 也一并包含
         for group in tomllib.load(open(PYPROJECT, "rb")).get("project", {}).get(
             "optional-dependencies", {}
         ).values():
             deps.extend(group)
         REQ_FILE.write_text("\n".join(deps) + "\n", encoding="utf-8")
-    except Exception as exc:  # pragma: no cover - defensive
+    except Exception as exc:  # pragma: no cover - 防御性兜底
         log(f"Could not parse pyproject.toml ({exc}); using static requirements.")
         REQ_FILE.write_text(
             "fastapi\nuvicorn\npandas\nnumpy\nscikit-learn\nmatplotlib\njoblib\njinja2\n",
@@ -125,20 +125,20 @@ def ensure_requirements_file() -> None:
 
 
 def install_dependencies(python: Path) -> None:
-    """Install dependencies with uv if possible, otherwise pip."""
+    """装依赖：能用 uv 就用 uv，否则退回 pip。"""
     uv = shutil.which("uv")
     ensure_requirements_file()
     if uv and PYPROJECT.exists():
         log("Installing dependencies with `uv sync` ...")
         run([uv, "sync", "--project", str(PYPROJECT)])
         return
-    # Fallback 1: pip install -r requirements.txt inside the venv
+    # 兜底 1：在 venv 里 pip install -r requirements.txt
     if REQ_FILE.exists():
         log("Installing dependencies with pip (requirements.txt) ...")
         run([str(python), "-m", "pip", "install", "--upgrade", "pip"])
         run([str(python), "-m", "pip", "install", "-r", str(REQ_FILE)])
         return
-    # Fallback 2: pip install the raw list
+    # 兜底 2：pip 直接装核心依赖清单
     log("Installing core dependencies with pip ...")
     run([str(python), "-m", "pip", "install",
          "fastapi", "uvicorn", "pandas", "numpy",
@@ -146,7 +146,7 @@ def install_dependencies(python: Path) -> None:
 
 
 def train_if_needed(python: Path) -> None:
-    """Run the full pipeline (charts + models + CSVs) on the first launch."""
+    """首次启动时跑完整流程(图 + 模型 + CSV)。"""
     if METRICS_CSV.exists():
         log("Training artifacts already present in outputs/ -> skipping training.")
         return
@@ -155,7 +155,7 @@ def train_if_needed(python: Path) -> None:
 
 
 def wait_for_server(url: str, timeout: float = 30.0) -> bool:
-    """Poll the health endpoint until the server responds (or timeout)."""
+    """轮询健康检查端点直到服务响应(或超时)。"""
     import urllib.request
     deadline = time.time() + timeout
     while time.time() < deadline:
@@ -168,7 +168,7 @@ def wait_for_server(url: str, timeout: float = 30.0) -> bool:
 
 
 def serve(python: Path) -> None:
-    """Start uvicorn and wait for it to come up."""
+    """启动 uvicorn 并等它起来。"""
     log(f"Starting FastAPI server on http://{HOST}:{PORT} ...")
     cmd = [str(python), "-m", "uvicorn", "app:app",
            "--host", str(HOST), "--port", str(PORT)]
@@ -179,14 +179,14 @@ def serve(python: Path) -> None:
     else:
         log("Server did not answer yet — it may still be starting. Check the log above.")
     try:
-        proc.wait()  # block until the user presses Ctrl+C
+        proc.wait()  # 阻塞直到用户按 Ctrl+C
     except KeyboardInterrupt:
         log("Shutting down ...")
         proc.terminate()
 
 
 # ---------------------------------------------------------------------------
-# main
+# 主流程
 # ---------------------------------------------------------------------------
 
 def main() -> None:
