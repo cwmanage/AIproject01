@@ -157,5 +157,5 @@ Get-NetTCPConnection -LocalPort 8000 -State Listen | ForEach-Object { Stop-Proce
 
 ## 详细文档
 
-- **用户使用手册**（面向使用/演示者，含 FAQ 与提交作业说明）→ `USER_MANUAL.md`
+- **用户使用手册**（面向使用/演示者，含 FAQ 与提交作业说明）→ `README.md`
 - **开发日志**（面向开发者，含技术决策与踩坑记录）→ `DEVELOPMENT_LOG.md`
