@@ -1,0 +1,28 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# ---- 虚拟环境 ----
+.venv/
+venv/
+env/
+
+# ---- IDE / 编辑器（个人配置，不入库）----
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# ---- 训练/运行产物（可再生，跑一次 python -m titanic.train 就有）----
+outputs/
+models/
+
+# ---- 运行期临时文件 ----
+.server_pid.txt
+*.log
+nohup.out
