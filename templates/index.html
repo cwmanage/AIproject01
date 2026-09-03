@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ t('page_title') }}</title>
+<style>
+  :root {
+    --navy: #1d3557; --blue: #457b9d; --light: #f1faee; --accent: #e63946;
+    --gold: #f4a261; --green: #2a9d8f; --dark: #212529;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft YaHei", sans-serif;
+         background: #eef2f5; color: var(--dark); }
+  header { background: linear-gradient(135deg, var(--navy), var(--blue)); color: white;
+           padding: 22px 28px 16px; }
+  header .topline { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 24px; }
+  header p { margin: 6px 0 0; opacity: .9; font-size: 13px; }
+  .lang-switch { background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.5);
+                 color: white; border-radius: 20px; padding: 7px 16px; font-size: 13.5px;
+                 cursor: pointer; white-space: nowrap; }
+  .lang-switch:hover { background: rgba(255,255,255,.28); }
+  nav { background: var(--navy); display: flex; gap: 4px; padding: 0 28px; flex-wrap: wrap; }
+  nav a { color: #cbd5e1; text-decoration: none; padding: 10px 14px; font-size: 14px;
+          border-bottom: 3px solid transparent; }
+  nav a:hover { color: white; }
+  nav a.active { color: white; border-bottom-color: var(--gold); }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; }
+  section { background: white; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.08);
+            padding: 20px 24px; margin-bottom: 22px; }
+  h2 { font-size: 18px; color: var(--navy); margin-top: 0; border-left: 4px solid var(--gold);
+       padding-left: 10px; }
+  .badge { display: inline-block; background: var(--green); color: white; border-radius: 20px;
+           padding: 2px 10px; font-size: 12px; margin-left: 8px; vertical-align: middle; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px; }
+  .card { border: 1px solid #e3e8ee; border-radius: 8px; overflow: hidden; background: white; }
+  .card img { width: 100%; display: block; }
+  .card .cap { padding: 10px 12px; font-size: 13px; }
+  .card .cap b { color: var(--navy); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 8px; }
+  th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid #edf0f4; }
+  th { background: #f6f8fa; color: var(--navy); font-weight: 600; }
+  tr:hover td { background: #fafcfe; }
+  .highlight td { background: #fff8e6 !important; font-weight: 600; }
+  .result { margin-top: 14px; padding: 16px; border-radius: 8px; font-size: 15px;
+            line-height: 1.7; }
+  .result.ok { background: #e7f6f2; border: 1px solid var(--green); color: #13574c; }
+  .result.warn { background: #fdf0e7; border: 1px solid var(--gold); color: #7a4a12; }
+  .result b { font-size: 17px; }
+  form { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  label { display: flex; flex-direction: column; font-size: 13px; color: #556; gap: 4px; }
+  input, select { padding: 8px 10px; border: 1px solid #ccd4dc; border-radius: 6px; font-size: 14px; }
+  button { padding: 11px 22px; border: none; border-radius: 6px; font-size: 15px;
+           cursor: pointer; background: var(--blue); color: white; }
+  button:hover { background: var(--navy); }
+  button:disabled { opacity: .6; cursor: wait; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  code { background: #f0f2f5; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+  .note { background: #f6f8fa; border-left: 4px solid var(--blue); padding: 12px 16px;
+          border-radius: 0 6px 6px 0; font-size: 13.5px; color: #445; margin-top: 16px; }
+  footer { text-align: center; color: #889; font-size: 12px; padding: 18px; }
+  @media (max-width: 700px) { nav { padding: 0 12px; } main { padding: 14px 10px 40px; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="topline">
+    <div>
+      <h1>🚢 {{ t('page_title') }}</h1>
+      <p>{{ t('header_subtitle') }}</p>
+    </div>
+    <button id="langBtn" class="lang-switch" type="button"
+            title="{{ t('lang_hint_en') }}">{{ t('lang_btn_en') }}</button>
+  </div>
+</header>
+
+<nav>
+  <a href="#charts" class="active">{{ t('nav_charts') }}</a>
+  <a href="#metrics">{{ t('nav_metrics') }}</a>
+  <a href="#predict">{{ t('nav_predict') }}</a>
+  <a href="#results">{{ t('nav_results') }}</a>
+  <a href="#api">{{ t('nav_api') }}</a>
+</nav>
+
+<main>
+
+<!-- ============ Section 1: Data understanding charts ============ -->
+<section id="charts">
+  <h2>{{ t('sec_charts') }}</h2>
+  <p style="font-size:13.5px;color:#556">{{ t('charts_intro')|safe }}</p>
+  <div class="grid">
+    {% for c in charts %}
+    <div class="card">
+      <img src="{{ c.url }}" alt="{{ c.file }}">
+      <div class="cap"><b>{{ c.file }}</b><br>{{ c.caption }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+<!-- ============ Section 2: Model comparison table ============ -->
+<section id="metrics">
+  <h2>{{ t('sec_metrics') }}</h2>
+  <p style="font-size:13.5px;color:#556">{{ t('metrics_intro')|safe }}</p>
+  {% if metrics %}
+  <table>
+    <thead>
+      <tr><th>{{ t('col_model') }}</th><th>{{ t('col_accuracy') }}</th><th>{{ t('col_precision') }}</th>
+          <th>{{ t('col_recall') }}</th><th>{{ t('col_f1') }}</th><th>{{ t('col_auc') }}</th></tr>
+    </thead>
+    <tbody>
+      {% for m in metrics %}
+      <tr {% if m.model_id == best_model %}class="highlight"{% endif %}>
+        <td>{{ m.model }}</td>
+        <td>{{ '%.4f'|format(m.accuracy) }}</td>
+        <td>{{ '%.4f'|format(m.precision) }}</td>
+        <td>{{ '%.4f'|format(m.recall) }}</td>
+        <td>{{ '%.4f'|format(m.f1) }}</td>
+        <td>{{ '%.4f'|format(m.auc) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p style="font-size:13px;color:#667;margin-top:6px">{{ t('auc_note') }}</p>
+  <p style="font-size:13px;color:#556;margin-top:8px">
+    {{ t('best_model_line') }} <b style="color:var(--navy)">{{ model_labels.get(best_model, best_model) }}</b>
+    <span style="color:#667"> {{ t('default_predict_hint') }}</span>
+  </p>
+  {% else %}
+  <p>{{ t('metrics_missing')|safe }}</p>
+  {% endif %}
+</section>
+
+<!-- ============ Section 3: Live prediction form ============ -->
+<section id="predict">
+  <h2>{{ t('sec_predict') }}</h2>
+  <form id="predForm">
+    <label>{{ t('form_class') }}
+      <select name="Pclass">
+        <option value="1">{{ t('form_class_1') }}</option>
+        <option value="2">{{ t('form_class_2') }}</option>
+        <option value="3" selected>{{ t('form_class_3') }}</option>
+      </select>
+    </label>
+    <label>{{ t('form_sex') }}
+      <select name="Sex">
+        <option value="female">{{ t('form_female') }}</option>
+        <option value="male" selected>{{ t('form_male') }}</option>
+      </select>
+    </label>
+    <label>{{ t('form_age') }}
+      <input name="Age" type="number" step="0.5" min="0" max="120" value="30">
+    </label>
+    <label>{{ t('form_sibsp') }}
+      <input name="SibSp" type="number" min="0" max="20" value="0">
+    </label>
+    <label>{{ t('form_parch') }}
+      <input name="Parch" type="number" min="0" max="20" value="0">
+    </label>
+    <label>{{ t('form_fare') }}
+      <input name="Fare" type="number" step="0.01" min="0" value="32.00">
+    </label>
+    <label>{{ t('form_embarked') }}
+      <select name="Embarked">
+        <option value="S" selected>{{ t('emb_S') }}</option>
+        <option value="C">{{ t('emb_C') }}</option>
+        <option value="Q">{{ t('emb_Q') }}</option>
+      </select>
+    </label>
+    <label>{{ t('form_model') }}
+      <select name="model">
+        <option value="best" selected>{{ t('model_best') }}</option>
+        {% for id_, label in model_labels.items() %}
+        <option value="{{ id_ }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label style="justify-content:flex-end;">
+      <span>&nbsp;</span>
+      <button type="submit">{{ t('btn_predict') }}</button>
+    </label>
+  </form>
+  <div id="predResult" class="result warn" style="display:none"></div>
+</section>
+
+<!-- ============ Section 4: Test-set results ============ -->
+<section id="results">
+  <h2>{{ t('sec_results') }}</h2>
+  <div class="row" style="margin-bottom:10px">
+    <label style="flex-direction:row;align-items:center;gap:8px">{{ t('results_model_label') }}
+      <select id="resultModel">
+        {% for id_, label in model_labels.items() %}
+        <option value="{{ id_ }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button id="loadResults" type="button">{{ t('btn_load') }}</button>
+    <span style="font-size:13px;color:#667" id="resultHint"></span>
+  </div>
+  <div style="overflow-x:auto">
+    <table id="resultTable"><thead>
+      <tr><th>{{ t('col_pid') }}</th><th>{{ t('col_true') }}</th><th>{{ t('col_pred') }}</th><th>{{ t('col_correct') }}</th></tr>
+    </thead><tbody></tbody></table>
+  </div>
+</section>
+
+<!-- ============ Section 5: API reference ============ -->
+<section id="api">
+  <h2>{{ t('sec_api') }}</h2>
+  <table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>{{ t('api_desc') }}</th></tr></thead>
+    <tbody>
+      <tr><td>GET</td><td><code>/api/health</code></td><td>{{ t('api_health') }}</td></tr>
+      <tr><td>GET</td><td><code>/api/summary</code></td><td>{{ t('api_summary') }}</td></tr>
+      <tr><td>GET</td><td><code>/api/predictions?model=svm</code></td><td>{{ t('api_predictions') }}</td></tr>
+      <tr><td>GET</td><td><code>/api/predict?pclass=1&amp;sex=female&amp;age=30&amp;fare=80&amp;embarked=C</code></td>
+          <td>{{ t('api_predict_get') }}</td></tr>
+      <tr><td>POST</td><td><code>/api/predict</code></td><td>{{ t('api_predict_post') }}</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <b>{{ t('api_note_title') }}:</b>
+    <br><code>curl -X POST http://127.0.0.1:8000/api/predict -H "Content-Type: application/json" -d "{\"Pclass\":1,\"Sex\":\"female\",\"Age\":29,\"SibSp\":0,\"Parch\":0,\"Fare\":110,\"Embarked\":\"C\"}"</code>
+    <br><br>
+    <b>{{ t('api_docs_label') }}:</b> <a href="/docs" target="_blank">/docs (Swagger UI)</a> ·
+    <a href="/redoc" target="_blank">/redoc</a>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  {{ t('footer_line') }}<br>
+  {{ t('footer_files')|safe }}
+</footer>
+
+<script>
+  // ---------- language switch ----------
+  const currentLang = "{{ lang }}";
+  const otherLang = currentLang === "en" ? "zh" : "en";
+
+  // Client-side strings that appear after rendering (JS-generated text)
+  const JS_UI = {
+    en: {
+      predicting: "⏳ Predicting…",
+      survived: "✅ SURVIVED",
+      notSurvived: "❌ NOT SURVIVED",
+      model: "Model",
+      survProb: "Survival probability",
+      notProb: "Not-survived probability",
+      error: "⚠️ Error",
+      loading: "Loading…",
+      loadingRows: "Loading rows…",
+      survivedShort: "✅ survived",
+      notSurvivedShort: "💀 not survived",
+      yes: "✔ yes", no: "✘ no",
+      rowsCorrect: "{n} test rows · {c} correct ({pct}% accuracy)",
+      loadTable: "Load Table",
+    },
+    zh: {
+      predicting: "⏳ 预测中…",
+      survived: "✅ 预测生还",
+      notSurvived: "❌ 预测未生还",
+      model: "模型",
+      survProb: "生还概率",
+      notProb: "未生还概率",
+      error: "⚠️ 错误",
+      loading: "加载中…",
+      loadingRows: "加载中…",
+      survivedShort: "✅ 生还",
+      notSurvivedShort: "💀 未生还",
+      yes: "✔ 是", no: "✘ 否",
+      rowsCorrect: "{n} 条测试数据 · 正确 {c} 条(准确率 {pct}%)",
+      loadTable: "加载表格",
+    },
+  };
+  const U = JS_UI[currentLang];
+
+  document.getElementById('langBtn').addEventListener('click', () => {
+    location.href = '/?lang=' + otherLang;   // full reload picks the new UI
+  });
+
+  // ---------- live prediction ----------
+  const form = document.getElementById('predForm');
+  const box = document.getElementById('predResult');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(form).entries());
+    const qs = new URLSearchParams(data).toString();
+    box.style.display = 'block';
+    box.className = 'result warn';
+    box.innerHTML = U.predicting;
+    try {
+      const res = await fetch('/api/predict?' + qs);
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.detail || res.statusText);
+      const ok = j.survived === 1;
+      box.className = 'result ' + (ok ? 'ok' : 'warn');
+      box.innerHTML = `<b>${ok ? U.survived : U.notSurvived}</b><br>
+        ${U.model}: ${j.model_label}<br>
+        ${U.survProb}: <b>${(j.survived_probability*100).toFixed(1)}%</b> ·
+        ${U.notProb}: ${(j.not_survived_probability*100).toFixed(1)}%`;
+    } catch (err) {
+      box.className = 'result warn';
+      box.innerHTML = U.error + ': ' + err.message;
+    }
+  });
+
+  // ---------- test-set result table ----------
+  const loadBtn = document.getElementById('loadResults');
+  const sel = document.getElementById('resultModel');
+  const tbody = document.querySelector('#resultTable tbody');
+  const hint = document.getElementById('resultHint');
+  loadBtn.addEventListener('click', async () => {
+    const model = sel.value;
+    loadBtn.disabled = true;
+    loadBtn.textContent = U.loading;
+    hint.textContent = U.loadingRows;
+    try {
+      const res = await fetch('/api/predictions?model=' + encodeURIComponent(model));
+      const rows = await res.json();
+      if (!res.ok) throw new Error(rows.detail || res.statusText);
+      tbody.innerHTML = rows.map(r => `<tr>
+        <td>${r.PassengerId}</td>
+        <td>${r.Survived_true === 1 ? U.survivedShort : U.notSurvivedShort}</td>
+        <td>${r.Survived_pred === 1 ? U.survivedShort : U.notSurvivedShort}</td>
+        <td>${r.Correct === 1 ? U.yes : U.no}</td>
+      </tr>`).join('');
+      const n = rows.length, c = rows.filter(r => r.Correct === 1).length;
+      hint.textContent = U.rowsCorrect
+        .replace('{n}', n).replace('{c}', c).replace('{pct}', (100*c/n).toFixed(1));
+    } catch (err) {
+      hint.textContent = U.error + ': ' + err.message;
+    } finally {
+      loadBtn.disabled = false;
+      loadBtn.textContent = U.loadTable;
+    }
+  });
+  // auto-load on first visit
+  loadBtn.click();
+</script>
+</body>
+</html>
